@@ -1,48 +1,62 @@
 """
-Database Schemas
+Database Schemas for Amberarctic
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
+Each Pydantic model below maps to a MongoDB collection where the collection
+name is the lowercase of the class name. For example:
+- Product -> "product"
+- Review -> "review"
+- Order -> "order"
 
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+These schemas are used for validation when creating documents.
 """
-
+from typing import List, Optional
 from pydantic import BaseModel, Field
-from typing import Optional
-
-# Example schemas (replace with your own):
-
-class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
 
 class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
+    title: str = Field(..., description="Product model name")
+    slug: str = Field(..., description="URL-safe identifier")
+    gender: str = Field(..., description="Men | Women | Unisex")
+    activity: List[str] = Field(default_factory=list, description="Activities: city, hiking, biking, travel")
+    description: Optional[str] = Field(None, description="Marketing description")
+    price: float = Field(..., ge=0, description="Price in USD")
+    images: List[str] = Field(default_factory=list, description="Image URLs")
+    colors: List[str] = Field(default_factory=list, description="Available color names")
+    sizes: List[str] = Field(default_factory=lambda: ["XS","S","M","L","XL","XXL"])
+    temperature_min_c: int = Field(..., description="Minimum comfortable temperature in Celsius")
+    battery_life_hours: int = Field(..., description="Battery life on standard mode")
+    warmth_level: int = Field(..., ge=1, le=10, description="1-10 warmth scale")
+    features: List[str] = Field(default_factory=list, description="Feature badges e.g., waterproof")
 
-# Add your own schemas here:
-# --------------------------------------------------
+class Review(BaseModel):
+    product_slug: str = Field(..., description="Associated product slug")
+    name: str = Field(..., description="Reviewer name")
+    rating: int = Field(..., ge=1, le=5)
+    comment: str = Field(...)
+    city: Optional[str] = None
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+class ContactMessage(BaseModel):
+    name: str
+    email: str
+    message: str
+
+class SizeProfile(BaseModel):
+    height_cm: int = Field(..., ge=120, le=230)
+    weight_kg: int = Field(..., ge=35, le=180)
+    build: str = Field(..., description="slim | average | athletic | broad")
+    gender: Optional[str] = Field(None, description="Men | Women | Unisex")
+
+class OrderItem(BaseModel):
+    product_slug: str
+    size: str
+    color: str
+    quantity: int = Field(..., ge=1)
+
+class Order(BaseModel):
+    items: List[OrderItem]
+    email: str
+    shipping_name: str
+    shipping_address: str
+    city: str
+    country: str
+    postal_code: str
+    total: float = Field(..., ge=0)
